@@ -120,7 +120,7 @@ class BaseMetricAdapter(BaseMetric):
 
     def __init__(self, name: str, metric_init_fn,
                  input_pos_args: List[str], stages: Iterable[str] = STAGES,
-                 metric_kwargs: Dict = None) -> None:
+                 metric_kwargs: Dict = None, fill_nan=True) -> None:
         """
         Initializes a BaseMetricAdapter with specific configurations for metric calculation.
 
@@ -130,6 +130,8 @@ class BaseMetricAdapter(BaseMetric):
             input_pos_args (List[str]): Ordered keys of input data from the inputs dictionary that the metric uses.
             stages (List[str]): The stages (e.g., 'train', 'val', 'test') at which the metric is active.
             metric_kwargs (Dict, optional): Additional keyword arguments to pass to metric_fn during `batch_update`.
+            fill_nan: (bool): If True, when the required input_pos_args not appears in the input,
+                instead of raise an exception, will fill nan instead.
         """
         super().__init__(name, input_pos_args, stages)
 
@@ -142,6 +144,8 @@ class BaseMetricAdapter(BaseMetric):
         })
 
         self.batch_val = {self.STAGE_PREFIX + i: None for i in stages}
+
+        self.fill_nan = fill_nan
 
     def batch_update(self, stage, **kwargs):
         """
@@ -156,8 +160,11 @@ class BaseMetricAdapter(BaseMetric):
 
         if stage not in self.stages:
             return
+        if self.fill_nan:
+            inputs = [kwargs.get(k, torch.nan) for k in self.input_pos_args]
+        else:
+            inputs = [kwargs.get(k) for k in self.input_pos_args]
 
-        inputs = [kwargs[k] for k in self.input_pos_args]
         batch_val = self.metrics[self.STAGE_PREFIX + stage](*inputs, **self.metric_kwargs)
 
         self.batch_val[self.STAGE_PREFIX + stage] = batch_val
@@ -298,7 +305,7 @@ class BaseMetaMetricAdapter(BaseMetaMetric):
 
     def __init__(self, name: str, metric_init_fn,
                  input_pos_args: List[str], stages: Iterable[str] = STAGES,
-                 metric_kwargs: Dict = None) -> None:
+                 metric_kwargs: Dict = None, fill_nan: bool = True) -> None:
         """
         Args:
             name (str): Name for the meta-metric, which will be used during logging as `<stage>/<name>`.
@@ -306,6 +313,8 @@ class BaseMetaMetricAdapter(BaseMetaMetric):
             input_pos_args (List[str]):  Ordered keys of input data from the inputs dictionary that the metric uses.
             stages (Iterable[str]): Stages (e.g., 'train', 'val', 'test') during which the meta-metric is active.
             metric_kwargs (Dict, optional): Additional keyword arguments to pass to metric_fn during `epoch_update`.
+            fill_nan: (bool): If True, when the required input_pos_args not appears in the input,
+                instead of raise an exception, will fill nan instead.
         """
         super().__init__(name, input_pos_args, stages)
 
@@ -316,6 +325,8 @@ class BaseMetaMetricAdapter(BaseMetaMetric):
         self.metrics = torch.nn.ModuleDict({
             self.STAGE_PREFIX + p: metric_init_fn() for p in stages
         })
+
+        self.fill_nan = fill_nan
 
     def epoch_update(self, stage, **kwargs):
         """
@@ -331,7 +342,11 @@ class BaseMetaMetricAdapter(BaseMetaMetric):
         if stage not in self.stages:
             return
 
-        inputs = [kwargs[k] for k in self.input_pos_args]
+        if self.fill_nan:
+            inputs = [kwargs.get(k, torch.nan) for k in self.input_pos_args]
+        else:
+            inputs = [kwargs.get(k) for k in self.input_pos_args]
+
         batch_val = self.metrics[self.STAGE_PREFIX + stage](*inputs, **self.metric_kwargs)
 
     def get_value(self, stage) -> Dict:
