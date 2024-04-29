@@ -1,8 +1,7 @@
-from typing import Iterable, List
+from typing import Iterable
 
 import torchmetrics
 
-from packmetric import LEVEL_BATCH, LEVEL_EPOCH
 from packmetric.metrics import BaseMetaMetricAdapter, BaseMetricAdapter
 from packmetric.metrics.base_metrics import STAGES
 
