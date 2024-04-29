@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "packmetric"
+authors = [
+    {name = "e_yi", email = "e_yi@outlook.com"}
+]
+description = "PackMetric"
+version = "0.1.0"
+readme = {file = ["README.md"], content-type = "text/markdown"}
+requires-python = ">=3.7"
+dependencies = [
+    "lightning>=2",
+    "torch>=2.0.0",
+    "torchmetrics>1.3.0"
+]
+
+[project.urls]
+Repository = "https://github.com/e-yi/packmetric.git"
+Issues = "https://github.com/e-yi/packmetric/issues"
+Changelog = "https://github.com/e-yi/packmetric/blob/master/CHANGELOG.md"
